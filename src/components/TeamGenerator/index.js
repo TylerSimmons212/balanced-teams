@@ -52,47 +52,26 @@ const TeamGenerator = ({ numTeamsOptions = [2, 3, 4, 5] }) => {
   };
 
   const distributePlayers = (players, numberOfTeams) => {
-    // Sort the players by their skill level (highest to lowest)
-    const sortedPlayers = [...players].sort((a, b) => b.skillLevel.localeCompare(a.skillLevel));
-  
-    // Divide the players into groups based on their sex
-    const malePlayers = sortedPlayers.filter(player => player.sex === 'Male');
-    const femalePlayers = sortedPlayers.filter(player => player.sex === 'Female');
-  
-    // Determine the minimum number of players per team
-    let minPlayersPerTeam = Math.floor(players.length / numberOfTeams);
-  
-    // Determine the number of remaining players after the minimum number of players have been assigned to each team
-    let remainingPlayers = players.length % numberOfTeams;
+    // Sort the players by their sex, skill level (highest to lowest), and height (highest to lowest)
+    const sortedPlayers = [...players].sort(
+      (a, b) =>
+        a.sex.localeCompare(b.sex) ||
+        b.skillLevel.localeCompare(a.skillLevel) ||
+        b.height - a.height
+    );
   
     // Create an array of empty teams
     const newTeams = Array.from({ length: numberOfTeams }, () => []);
   
-    // Assign male players to teams based on their height and skill level
-    malePlayers.forEach((player, index) => {
+    // Distribute players evenly among the teams, considering their sex, skill level, and height
+    sortedPlayers.forEach((player, index) => {
       const teamIndex = index % numberOfTeams;
-      const shortestTeam = newTeams.reduce((acc, team) => (team.length < acc.length ? team : acc), newTeams[0]);
-  
-      if (shortestTeam.length < minPlayersPerTeam || remainingPlayers > 0) {
-        shortestTeam.push(player);
-        if (shortestTeam.length === minPlayersPerTeam) {
-          remainingPlayers--;
-        }
-      } else {
-        const lowestSkillTeam = newTeams.reduce((acc, team) => (team.reduce((totalSkill, p) => totalSkill + (p.sex === 'Male' ? 1 : 0) * p.skillLevel.localeCompare('Intermediate'), 0) < acc.reduce((totalSkill, p) => totalSkill + (p.sex === 'Male' ? 1 : 0) * p.skillLevel.localeCompare('Intermediate'), 0) ? team : acc), newTeams[0]);
-        lowestSkillTeam.push(player);
-      }
-    });
-  
-    // Assign female players to teams based on their skill level
-    femalePlayers.forEach((player, index) => {
-      const teamIndex = index % numberOfTeams;
-      const highestSkillTeam = newTeams.reduce((acc, team) => (team.reduce((totalSkill, p) => totalSkill + (p.sex === 'Female' ? 1 : 0) * p.skillLevel.localeCompare('Intermediate'), 0) > acc.reduce((totalSkill, p) => totalSkill + (p.sex === 'Female' ? 1 : 0) * p.skillLevel.localeCompare('Intermediate'), 0) ? team : acc), newTeams[0]);
-      highestSkillTeam.push(player);
+      newTeams[teamIndex].push(player);
     });
   
     return newTeams;
   };
+  
 
   const generateTeams = () => {
     setLoading(true);
