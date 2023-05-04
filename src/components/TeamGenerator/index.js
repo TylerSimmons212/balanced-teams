@@ -179,7 +179,7 @@ const TeamGenerator = ({ numTeamsOptions = [2, 3, 4, 5] }) => {
         <>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-evenly', flexWrap: 'wrap', margin: '20px auto' }}>
           {generatedTeams.map((team, index) => (
-            <Card sx={{ width: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '20px' }}>
+            <Card sx={{ width: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '20px' }} key={index}>
               <CardContent>
                 <Typography variant="h5" component="div">
                   Team {index + 1}
