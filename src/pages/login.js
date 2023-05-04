@@ -14,7 +14,7 @@ const Login = () => {
     if (user) {
       router.push('/home');
     }
-  }, [user]);
+  }, [user, router]);
 
   const handleLoginSuccess = () => {
     router.push('/home');
@@ -29,7 +29,7 @@ const Login = () => {
         <LoginForm onSuccess={handleLoginSuccess} />
         <Box mt={3}>
           <Typography variant="body1">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link href="/signup">
               <a>Create one</a>
             </Link>

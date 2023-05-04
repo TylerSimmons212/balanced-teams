@@ -12,7 +12,7 @@ const Home = () => {
     if (user) {
       router.push('/home');
     }
-  }, [user]);
+  }, [user, router]);
 
   return user ? null : <Login />;
 };

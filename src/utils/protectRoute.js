@@ -12,7 +12,7 @@ const protectRoute = (WrappedComponent) => {
       if (!user) {
         router.push('/login');
       }
-    }, [user]);
+    }, [user, router]);
 
     return user ? <WrappedComponent {...props} /> : null;
   };

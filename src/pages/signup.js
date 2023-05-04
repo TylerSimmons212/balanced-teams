@@ -13,7 +13,7 @@ const Signup = () => {
     if (user) {
       router.push('/home');
     }
-  }, [user]);
+  }, [user, router]);
 
   const handleSignupSuccess = () => {
     router.push('/onboarding');
