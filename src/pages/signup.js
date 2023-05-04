@@ -2,7 +2,7 @@
 import React, { useContext } from 'react';
 import { useRouter } from 'next/router';
 import { AuthContext } from '../contexts/AuthContext';
-import SignupForm from '../components/SignupForm';
+import SignupForm from '../components/SignUpForm';
 import { Container, Box, Typography } from '@mui/material';
 
 const Signup = () => {
