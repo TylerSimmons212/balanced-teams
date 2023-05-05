@@ -105,7 +105,6 @@ const TeamGenerator = ({ numTeamsOptions = [2, 3, 4, 5] }) => {
 
   const reshuffleTeams = () => {
     setLoading(true);
-    setShowConfetti(true);
     setTimeout(() => {
       const shuffledPlayerIds = shuffle(selectedPlayers.slice());
       const sortedPlayers = createSortedPlayers(shuffledPlayerIds);
