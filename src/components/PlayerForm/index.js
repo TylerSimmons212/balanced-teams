@@ -10,7 +10,7 @@ import {
   Typography,
 } from "@mui/material";
 
-const PlayerForm = ({ onSubmit, selectedPlayer, showCancelButton = true }) => {
+const PlayerForm = ({ onSubmit, selectedPlayer, showCancelButton = true, onCancel }) => {
   const [name, setName] = useState("");
   const [sex, setSex] = useState("");
   const [heightFeet, setHeightFeet] = useState("");
@@ -37,7 +37,7 @@ const PlayerForm = ({ onSubmit, selectedPlayer, showCancelButton = true }) => {
       height: `${heightFeet}'${heightInches}"`,
       skillLevel,
     });
-  };
+  };  
 
   return (
     <form style={{ padding: "10px" }} onSubmit={handleSubmit}>

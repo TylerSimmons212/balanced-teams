@@ -92,10 +92,10 @@ const PlayerList = ({ userId }) => {
         style={{ margin: "10px" }}
       >
         <Box sx={style}>
-          <PlayerForm
+        <PlayerForm
             selectedPlayer={selectedPlayer}
             onSubmit={selectedPlayer ? handleUpdatePlayer : handleAddPlayer}
-            onCancel={handleCloseForm}
+            onCancel={handleCloseForm} // pass `handleCloseForm` as `onCancel`
             submitText={selectedPlayer ? "Update Player" : "Add Player"}
           />
         </Box>
