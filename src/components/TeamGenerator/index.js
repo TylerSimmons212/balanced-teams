@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import PropTypes from "prop-types";
 import {
   Button,
@@ -19,6 +19,7 @@ import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import { usePlayers } from "../../hooks/usePlayers";
 import { AuthContext } from "../../contexts/AuthContext";
+import Confetti from "react-confetti";
 
 const TeamGenerator = ({ numTeamsOptions = [2, 3, 4, 5] }) => {
   const [selectedPlayers, setSelectedPlayers] = useState([]);
@@ -32,6 +33,7 @@ const TeamGenerator = ({ numTeamsOptions = [2, 3, 4, 5] }) => {
   const userId = user?.uid;
   const { players } = usePlayers(userId);
   const [anchorEl, setAnchorEl] = useState(null);
+  const [showConfetti, setShowConfetti] = useState(false);
   const [filters, setFilters] = useState({
     topPriority: "skillLevel",
     secondPriority: "sex",
@@ -67,60 +69,43 @@ const TeamGenerator = ({ numTeamsOptions = [2, 3, 4, 5] }) => {
   const distributePlayers = (players, numberOfTeams, filters) => {
     const sortedPlayers = [...players].sort((a, b) => {
       let result = 0;
-  
-      if (filters.topPriority !== 'none') {
+
+      if (filters.topPriority !== "none") {
         result = comparePlayers(a, b, filters.topPriority);
       }
-  
-      if (result === 0 && filters.secondPriority !== 'none') {
+
+      if (result === 0 && filters.secondPriority !== "none") {
         result = comparePlayers(a, b, filters.secondPriority);
       }
-  
+
       return result;
     });
-  
+
     const newTeams = Array.from({ length: numberOfTeams }, () => []);
     sortedPlayers.forEach((player, index) => {
       const teamIndex = index % numberOfTeams;
       newTeams[teamIndex].push(player);
     });
-  
+
     return newTeams;
   };
-  
+
   const comparePlayers = (a, b, priority) => {
     switch (priority) {
-      case 'sex':
+      case "sex":
         return a.sex.localeCompare(b.sex);
-      case 'skillLevel':
+      case "skillLevel":
         return b.skillLevel.localeCompare(a.skillLevel);
-      case 'height':
+      case "height":
         return b.height - a.height;
       default:
         return 0;
     }
-  };  
-
-  const generateTeams = () => {
-    setLoading(true);
-    setTimeout(() => {
-      const sortedPlayers = createSortedPlayers(selectedPlayers);
-      if (sortedPlayers.length < numberOfTeams) {
-        alert(
-          `Please select at least ${numberOfTeams} players to generate ${numberOfTeams} teams`
-        );
-        setLoading(false);
-        return;
-      }
-      const newTeams = distributePlayers(sortedPlayers, numberOfTeams, filters);
-      setGeneratedTeams(newTeams);
-      setLoading(false);
-      setShowTeams(true);
-    }, 1000);
   };
 
   const reshuffleTeams = () => {
     setLoading(true);
+    setShowConfetti(true);
     setTimeout(() => {
       const shuffledPlayerIds = shuffle(selectedPlayers.slice());
       const sortedPlayers = createSortedPlayers(shuffledPlayerIds);
@@ -137,6 +122,39 @@ const TeamGenerator = ({ numTeamsOptions = [2, 3, 4, 5] }) => {
   const handleCloseFilterPopover = () => {
     setAnchorEl(null);
   };
+
+  useEffect(() => {
+    let confettiTimeout;
+    if (showConfetti) {
+      confettiTimeout = setTimeout(() => {
+        setShowConfetti(false);
+      }, 5000);
+    }
+
+    return () => {
+      clearTimeout(confettiTimeout);
+    };
+  }, [showConfetti]);
+
+  const generateTeams = () => {
+    setLoading(true);
+    setTimeout(() => {
+      const sortedPlayers = createSortedPlayers(selectedPlayers);
+      if (sortedPlayers.length < numberOfTeams) {
+        alert(
+          `Please select at least ${numberOfTeams} players to generate ${numberOfTeams} teams`
+        );
+        setLoading(false);
+        return;
+      }
+      const newTeams = distributePlayers(sortedPlayers, numberOfTeams, filters);
+      setGeneratedTeams(newTeams);
+      setLoading(false);
+      setShowTeams(true);
+      setShowConfetti(true);
+    }, 1000);
+  };
+
   return (
     <Container maxWidth="md">
       <Typography
@@ -208,7 +226,11 @@ const TeamGenerator = ({ numTeamsOptions = [2, 3, 4, 5] }) => {
               }}
             >
               <Box sx={{ p: 2 }}>
-                <FormControl variant="outlined" fullWidth style={{marginBottom: '20px'}}>
+                <FormControl
+                  variant="outlined"
+                  fullWidth
+                  style={{ marginBottom: "20px" }}
+                >
                   <InputLabel>Top Priority</InputLabel>
                   <Select
                     value={filters.topPriority}
@@ -250,6 +272,7 @@ const TeamGenerator = ({ numTeamsOptions = [2, 3, 4, 5] }) => {
           </Button>
         </Grid>
       </Grid>
+      {showConfetti && <Confetti />}
       {showTeams && (
         <>
           <div
