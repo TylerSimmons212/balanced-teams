@@ -10,9 +10,13 @@ import {
   MenuItem,
   Select,
   Typography,
+  IconButton,
+  Popover,
+  Box,
 } from "@mui/material";
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
+import { FilterList as FilterListIcon } from "@mui/icons-material";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
 import { usePlayers } from "../../hooks/usePlayers";
 import { AuthContext } from "../../contexts/AuthContext";
 
@@ -27,6 +31,15 @@ const TeamGenerator = ({ numTeamsOptions = [2, 3, 4, 5] }) => {
   const { user } = useContext(AuthContext);
   const userId = user?.uid;
   const { players } = usePlayers(userId);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [filters, setFilters] = useState({
+    topPriority: "skillLevel",
+    secondPriority: "sex",
+  });
+
+  const handleFilterChange = (event) => {
+    setFilters({ ...filters, [event.target.name]: event.target.value });
+  };
 
   const handlePlayersChange = (event) => {
     setSelectedPlayers(event.target.value);
@@ -51,19 +64,22 @@ const TeamGenerator = ({ numTeamsOptions = [2, 3, 4, 5] }) => {
     return sortedPlayers.filter((player) => player !== undefined);
   };
 
-  const distributePlayers = (players, numberOfTeams) => {
-    // Sort the players by their sex, skill level (highest to lowest), and height (highest to lowest)
-    const sortedPlayers = [...players].sort(
-      (a, b) =>
-        a.sex.localeCompare(b.sex) ||
-        b.skillLevel.localeCompare(a.skillLevel) ||
-        b.height - a.height
-    );
+  const distributePlayers = (players, numberOfTeams, filters) => {
+    const sortedPlayers = [...players].sort((a, b) => {
+      let result = 0;
   
-    // Create an array of empty teams
+      if (filters.topPriority !== 'none') {
+        result = comparePlayers(a, b, filters.topPriority);
+      }
+  
+      if (result === 0 && filters.secondPriority !== 'none') {
+        result = comparePlayers(a, b, filters.secondPriority);
+      }
+  
+      return result;
+    });
+  
     const newTeams = Array.from({ length: numberOfTeams }, () => []);
-  
-    // Distribute players evenly among the teams, considering their sex, skill level, and height
     sortedPlayers.forEach((player, index) => {
       const teamIndex = index % numberOfTeams;
       newTeams[teamIndex].push(player);
@@ -72,6 +88,18 @@ const TeamGenerator = ({ numTeamsOptions = [2, 3, 4, 5] }) => {
     return newTeams;
   };
   
+  const comparePlayers = (a, b, priority) => {
+    switch (priority) {
+      case 'sex':
+        return a.sex.localeCompare(b.sex);
+      case 'skillLevel':
+        return b.skillLevel.localeCompare(a.skillLevel);
+      case 'height':
+        return b.height - a.height;
+      default:
+        return 0;
+    }
+  };  
 
   const generateTeams = () => {
     setLoading(true);
@@ -84,7 +112,7 @@ const TeamGenerator = ({ numTeamsOptions = [2, 3, 4, 5] }) => {
         setLoading(false);
         return;
       }
-      const newTeams = distributePlayers(sortedPlayers, numberOfTeams);
+      const newTeams = distributePlayers(sortedPlayers, numberOfTeams, filters);
       setGeneratedTeams(newTeams);
       setLoading(false);
       setShowTeams(true);
@@ -96,19 +124,40 @@ const TeamGenerator = ({ numTeamsOptions = [2, 3, 4, 5] }) => {
     setTimeout(() => {
       const shuffledPlayerIds = shuffle(selectedPlayers.slice());
       const sortedPlayers = createSortedPlayers(shuffledPlayerIds);
-      const newTeams = distributePlayers(sortedPlayers, numberOfTeams);
+      const newTeams = distributePlayers(sortedPlayers, numberOfTeams, filters);
       setGeneratedTeams(newTeams);
       setLoading(false);
     }, 1000);
   };
 
+  const handleOpenFilterPopover = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleCloseFilterPopover = () => {
+    setAnchorEl(null);
+  };
   return (
     <Container maxWidth="md">
-      <Typography variant="h4" gutterBottom style={{marginTop: '20px', textAlign: 'center'}}>
+      <Typography
+        variant="h4"
+        gutterBottom
+        style={{ marginTop: "20px", textAlign: "center" }}
+      >
         Team Generator
       </Typography>
-      <Grid container spacing={2} style={{ backgroundColor: '#fff', borderRadius: '10px', margin: 0, padding: '20px', width: '100%'}}>
-        <Grid item xs={12} style={{padding: 0}}>
+      <Grid
+        container
+        spacing={2}
+        style={{
+          backgroundColor: "#fff",
+          borderRadius: "10px",
+          margin: 0,
+          padding: "20px",
+          width: "100%",
+        }}
+      >
+        <Grid item xs={12} style={{ padding: 0 }}>
           <FormControl variant="outlined" fullWidth>
             <InputLabel>Select Players</InputLabel>
             <Select
@@ -125,24 +174,71 @@ const TeamGenerator = ({ numTeamsOptions = [2, 3, 4, 5] }) => {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={12} style={{padding: 0, margin: '20px auto'}}>
-          <FormControl variant="outlined" fullWidth>
-            <InputLabel>Number of Teams</InputLabel>
-            <Select
-              value={numberOfTeams}
-              onChange={handleNumberOfTeamsChange}
-              label="Number of Teams"
+        <Grid item xs={12} style={{ padding: 0, margin: "20px auto" }}>
+          <Box display="flex" alignItems="center">
+            <FormControl variant="outlined" fullWidth>
+              <InputLabel>Number of Teams</InputLabel>
+              <Select
+                value={numberOfTeams}
+                onChange={handleNumberOfTeamsChange}
+                label="Number of Teams"
+              >
+                {numTeamsOptions &&
+                  numTeamsOptions.map((option) => (
+                    <MenuItem key={option} value={option}>
+                      {option}
+                    </MenuItem>
+                  ))}
+              </Select>
+            </FormControl>
+            <IconButton onClick={handleOpenFilterPopover}>
+              <FilterListIcon />
+            </IconButton>
+            <Popover
+              open={Boolean(anchorEl)}
+              anchorEl={anchorEl}
+              onClose={handleCloseFilterPopover}
+              anchorOrigin={{
+                vertical: "bottom",
+                horizontal: "center",
+              }}
+              transformOrigin={{
+                vertical: "top",
+                horizontal: "center",
+              }}
             >
-              {numTeamsOptions &&
-                numTeamsOptions.map((option) => (
-                  <MenuItem key={option} value={option}>
-                    {option}
-                  </MenuItem>
-                ))}
-            </Select>
-          </FormControl>
+              <Box sx={{ p: 2 }}>
+                <FormControl variant="outlined" fullWidth style={{marginBottom: '20px'}}>
+                  <InputLabel>Top Priority</InputLabel>
+                  <Select
+                    value={filters.topPriority}
+                    onChange={handleFilterChange}
+                    label="Top Priority"
+                    name="topPriority"
+                  >
+                    <MenuItem value="sex">Sex</MenuItem>
+                    <MenuItem value="skillLevel">Skill Level</MenuItem>
+                    <MenuItem value="height">Height</MenuItem>
+                  </Select>
+                </FormControl>
+                <FormControl variant="outlined" fullWidth>
+                  <InputLabel>Second Priority</InputLabel>
+                  <Select
+                    value={filters.secondPriority}
+                    onChange={handleFilterChange}
+                    label="Second Priority"
+                    name="secondPriority"
+                  >
+                    <MenuItem value="sex">Sex</MenuItem>
+                    <MenuItem value="skillLevel">Skill Level</MenuItem>
+                    <MenuItem value="height">Height</MenuItem>
+                  </Select>
+                </FormControl>
+              </Box>
+            </Popover>
+          </Box>
         </Grid>
-        <Grid item xs={12} style={{padding: 0}}>
+        <Grid item xs={12} style={{ padding: 0 }}>
           <Button
             fullWidth
             variant="contained"
@@ -156,25 +252,43 @@ const TeamGenerator = ({ numTeamsOptions = [2, 3, 4, 5] }) => {
       </Grid>
       {showTeams && (
         <>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-evenly', flexWrap: 'wrap', margin: '20px auto' }}>
-          {generatedTeams.map((team, index) => (
-            <Card sx={{ width: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '20px' }} key={index}>
-              <CardContent>
-                <Typography variant="h5" component="div">
-                  Team {index + 1}
-                </Typography>
-                <Typography sx={{ mb: 1.5 }} color="text.secondary">
-
-                </Typography>
-                <Typography variant="body2">
-                  {team.map((player) => (
-                    <li key={player.id}>{player.name}</li>
-                  ))}
-                </Typography>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-evenly",
+              flexWrap: "wrap",
+              margin: "20px auto",
+            }}
+          >
+            {generatedTeams.map((team, index) => (
+              <Card
+                sx={{
+                  width: 200,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  margin: "20px",
+                }}
+                key={index}
+              >
+                <CardContent>
+                  <Typography variant="h5" component="div">
+                    Team {index + 1}
+                  </Typography>
+                  <Typography
+                    sx={{ mb: 1.5 }}
+                    color="text.secondary"
+                  ></Typography>
+                  <Typography variant="body2">
+                    {team.map((player) => (
+                      <li key={player.id}>{player.name}</li>
+                    ))}
+                  </Typography>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
           <Button
             fullWidth
             variant="contained"
