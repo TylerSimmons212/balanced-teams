@@ -1,19 +1,11 @@
 // src/pages/signup.js
 import React, { useContext } from 'react';
 import { useRouter } from 'next/router';
-import { AuthContext } from '../contexts/AuthContext';
 import SignupForm from '../components/SignUpForm';
 import { Container, Box, Typography } from '@mui/material';
 
 const Signup = () => {
   const router = useRouter();
-  const { user } = useContext(AuthContext);
-
-  React.useEffect(() => {
-    if (user) {
-      router.push('/home');
-    }
-  }, [user, router]);
 
   const handleSignupSuccess = () => {
     router.push('/onboarding');

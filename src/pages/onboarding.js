@@ -1,18 +1,29 @@
-// src/pages/onboarding.js
-import React from 'react';
+import React, { useContext } from 'react';
 import { useRouter } from 'next/router';
 import PlayerForm from '../components/PlayerForm';
-import { Container, Box, Typography } from '@mui/material';
+import { Container, Box, Typography, CircularProgress } from '@mui/material';
+import { usePlayers } from '../hooks/usePlayers';
+import { AuthContext } from '../contexts/AuthContext';
 
 const Onboarding = () => {
   const router = useRouter();
+  const { user } = useContext(AuthContext);
+  const { addPlayer } = usePlayers(user?.uid);
+  const [isLoading, setIsLoading] = React.useState(false);
 
-  const handlePlayerSubmit = (player) => {
-    // Add player to the database
-    console.log('Player added:', player);
+  const handlePlayerSubmit = async (player) => {
+    setIsLoading(true);
 
-    // Redirect to the home page
-    router.push('/home');
+    try {
+      await addPlayer(player);
+
+      // Redirect to the home page
+      router.push('/home');
+    } catch (error) {
+      console.error('Error adding player:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -22,6 +33,7 @@ const Onboarding = () => {
           Add Your First Player
         </Typography>
         <PlayerForm onSubmit={handlePlayerSubmit} showCancelButton={false} />
+        {isLoading && <CircularProgress style={{ marginTop: '20px' }} />}
       </Box>
     </Container>
   );
