@@ -1,125 +1,127 @@
 import React, { useState, useContext, useEffect } from "react";
-import PropTypes from "prop-types";
-import {
-  Button,
-  CircularProgress,
-  Container,
-  FormControl,
-  Grid,
-  InputLabel,
-  MenuItem,
-  Select,
-  Typography,
-  IconButton,
-  Popover,
-  Box,
-} from "@mui/material";
-import { FilterList as FilterListIcon } from "@mui/icons-material";
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
+import Confetti from "react-confetti";
+import { Container, Typography, IconButton } from "@mui/material";
 import { usePlayers } from "../../hooks/usePlayers";
 import { AuthContext } from "../../contexts/AuthContext";
-import Confetti from "react-confetti";
+import TeamDisplay from "./TeamDisplay";
+import GeneratorWidget from "./GeneratorWidget";
+import MovePlayerDialog from "./MovePlayerDialog";
+import {
+  Shuffle as ShuffleIcon,
+  Info as InfoIcon,
+  Edit as EditIcon,
+} from "@mui/icons-material";
+import {
+  shuffle,
+  createSortedPlayers,
+  distributePlayers,
+} from "./teamGeneratorUtils";
 
-const TeamGenerator = ({ numTeamsOptions = [2, 3, 4, 5] }) => {
+const TeamGenerator = () => {
   const [selectedPlayers, setSelectedPlayers] = useState([]);
-  const [numberOfTeams, setNumberOfTeams] = useState(
-    numTeamsOptions && numTeamsOptions.length > 0 ? numTeamsOptions[0] : 2
-  );
-  const [generatedTeams, setGeneratedTeams] = useState([]);
-  const [showTeams, setShowTeams] = useState(false);
-  const [loading, setLoading] = useState(false);
   const { user } = useContext(AuthContext);
   const userId = user?.uid;
   const { players } = usePlayers(userId);
-  const [anchorEl, setAnchorEl] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [showTeams, setShowTeams] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [numberOfTeams, setNumberOfTeams] = useState(2);
+  const [editMode, setEditMode] = useState(false);
+  const [openDialog, setOpenDialog] = useState(false);
+  const [generatedTeams, setGeneratedTeams] = useState([]);
+  const [playerToMove, setPlayerToMove] = useState({});
   const [filters, setFilters] = useState({
     topPriority: "skillLevel",
     secondPriority: "sex",
   });
+  const [showPlayerInfo, setShowPlayerInfo] = useState(false);
 
-  const handleFilterChange = (event) => {
-    setFilters({ ...filters, [event.target.name]: event.target.value });
-  };
-
-  const handlePlayersChange = (event) => {
-    setSelectedPlayers(event.target.value);
-  };
-
-  const handleNumberOfTeamsChange = (event) => {
-    setNumberOfTeams(event.target.value);
-  };
-
-  const shuffle = (array) => {
-    for (let i = array.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [array[i], array[j]] = [array[j], array[i]];
-    }
-    return array;
-  };
-
-  const createSortedPlayers = (playerIds) => {
-    const sortedPlayers = playerIds.map((playerId) =>
-      players.find((player) => player.id === playerId)
-    );
-    return sortedPlayers.filter((player) => player !== undefined);
-  };
-
-  const distributePlayers = (players, numberOfTeams, filters) => {
-    const sortedPlayers = [...players].sort((a, b) => {
-      let result = 0;
-
-      if (filters.topPriority !== "none") {
-        result = comparePlayers(a, b, filters.topPriority);
-      }
-
-      if (result === 0 && filters.secondPriority !== "none") {
-        result = comparePlayers(a, b, filters.secondPriority);
-      }
-
-      return result;
-    });
-
-    const newTeams = Array.from({ length: numberOfTeams }, () => []);
-    sortedPlayers.forEach((player, index) => {
-      const teamIndex = index % numberOfTeams;
-      newTeams[teamIndex].push(player);
-    });
-
-    return newTeams;
-  };
-
-  const comparePlayers = (a, b, priority) => {
-    switch (priority) {
-      case "sex":
-        return a.sex.localeCompare(b.sex);
-      case "skillLevel":
-        return b.skillLevel.localeCompare(a.skillLevel);
-      case "height":
-        return b.height - a.height;
-      default:
-        return 0;
-    }
-  };
-
-  const reshuffleTeams = () => {
+  const handleShuffleClick = () => {
+    setShowConfetti(true);
     setLoading(true);
     setTimeout(() => {
       const shuffledPlayerIds = shuffle(selectedPlayers.slice());
-      const sortedPlayers = createSortedPlayers(shuffledPlayerIds);
+      const sortedPlayers = createSortedPlayers(shuffledPlayerIds, players);
       const newTeams = distributePlayers(sortedPlayers, numberOfTeams, filters);
       setGeneratedTeams(newTeams);
       setLoading(false);
     }, 1000);
   };
 
-  const handleOpenFilterPopover = (event) => {
-    setAnchorEl(event.currentTarget);
+  const handleEditModeClick = () => {
+    setEditMode(!editMode);
   };
 
-  const handleCloseFilterPopover = () => {
-    setAnchorEl(null);
+  const handlePlayerInfoClick = () => {
+    setShowPlayerInfo(!showPlayerInfo);
+  };
+
+  const onMove = (playerToMove, newTeamIndex) => {
+    console.log("Player to move: ", playerToMove)
+    console.log("New team index: ", newTeamIndex)
+    // Check if newTeamIndex is valid
+    if (newTeamIndex < 0 || newTeamIndex >= generatedTeams.length) {
+      console.error(`Invalid team index: ${newTeamIndex}`);
+      return;
+    }
+
+    // Find the current team of the player
+    const currentTeamIndex = generatedTeams.findIndex((team) =>
+      team.some((p) => p.id === playerToMove.id)
+    );
+
+    // Check if player was found in a team
+    if (currentTeamIndex === -1) {
+      console.error(`Player not found in any team: ${playerToMove.id}`);
+      return;
+    }
+
+    // Get the current team
+    const currentTeam = generatedTeams[currentTeamIndex];
+
+    // Remove the player from the current team
+    const updatedCurrentTeam = currentTeam.filter(
+      (p) => p.id !== playerToMove.id
+    );
+
+    // Add the player to the new team
+    const updatedNewTeam = [...generatedTeams[newTeamIndex], playerToMove];
+
+    // Update the teams state
+    const updatedTeams = generatedTeams.map((team, index) => {
+      if (index === currentTeamIndex) return updatedCurrentTeam;
+      if (index === newTeamIndex) return updatedNewTeam;
+      return team;
+    });
+
+    setGeneratedTeams(updatedTeams, () => {
+      // Check if player was found in a team after state update
+      const updatedCurrentTeamIndex = generatedTeams.findIndex((team) =>
+        team.some((p) => p.id === playerToMove.id)
+      );
+      if (updatedCurrentTeamIndex === -1) {
+        console.error(`Player not found in any team: ${playerToMove.id}`);
+        return;
+      }
+    });
+  };
+
+  const movePlayerToOtherTeam = (playerToMove) => {
+    // Find the other team
+    const currentTeamIndex = generatedTeams.findIndex((team) =>
+      team.some((p) => p.id === playerToMove.id)
+    );
+
+    // Check if player was found in a team
+    if (currentTeamIndex === -1) {
+      console.error(`Player not found in any team: ${playerToMove.id}`);
+      return;
+    }
+
+    const otherTeamIndex = currentTeamIndex === 0 ? 1 : 0;
+
+    // Use the onMove function to move the player to the other team
+    onMove(playerToMove, otherTeamIndex);
   };
 
   useEffect(() => {
@@ -135,27 +137,9 @@ const TeamGenerator = ({ numTeamsOptions = [2, 3, 4, 5] }) => {
     };
   }, [showConfetti]);
 
-  const generateTeams = () => {
-    setLoading(true);
-    setTimeout(() => {
-      const sortedPlayers = createSortedPlayers(selectedPlayers);
-      if (sortedPlayers.length < numberOfTeams) {
-        alert(
-          `Please select at least ${numberOfTeams} players to generate ${numberOfTeams} teams`
-        );
-        setLoading(false);
-        return;
-      }
-      const newTeams = distributePlayers(sortedPlayers, numberOfTeams, filters);
-      setGeneratedTeams(newTeams);
-      setLoading(false);
-      setShowTeams(true);
-      setShowConfetti(true);
-    }, 1000);
-  };
-
   return (
     <Container maxWidth="md">
+      {/* Title */}
       <Typography
         variant="h4"
         gutterBottom
@@ -163,171 +147,90 @@ const TeamGenerator = ({ numTeamsOptions = [2, 3, 4, 5] }) => {
       >
         Team Generator
       </Typography>
-      <Grid
-        container
-        spacing={2}
-        style={{
-          backgroundColor: "#fff",
-          borderRadius: "10px",
-          margin: 0,
-          padding: "20px",
-          width: "100%",
-        }}
-      >
-        <Grid item xs={12} style={{ padding: 0 }}>
-          <FormControl variant="outlined" fullWidth>
-            <InputLabel>Select Players</InputLabel>
-            <Select
-              multiple
-              value={selectedPlayers}
-              onChange={handlePlayersChange}
-              label="Select Players"
-            >
-              {players.map((player) => (
-                <MenuItem key={player.id} value={player.id}>
-                  {player.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-        <Grid item xs={12} style={{ padding: 0, margin: "20px auto" }}>
-          <Box display="flex" alignItems="center">
-            <FormControl variant="outlined" fullWidth>
-              <InputLabel>Number of Teams</InputLabel>
-              <Select
-                value={numberOfTeams}
-                onChange={handleNumberOfTeamsChange}
-                label="Number of Teams"
-              >
-                {numTeamsOptions &&
-                  numTeamsOptions.map((option) => (
-                    <MenuItem key={option} value={option}>
-                      {option}
-                    </MenuItem>
-                  ))}
-              </Select>
-            </FormControl>
-            <IconButton onClick={handleOpenFilterPopover}>
-              <FilterListIcon />
-            </IconButton>
-            <Popover
-              open={Boolean(anchorEl)}
-              anchorEl={anchorEl}
-              onClose={handleCloseFilterPopover}
-              anchorOrigin={{
-                vertical: "bottom",
-                horizontal: "center",
-              }}
-              transformOrigin={{
-                vertical: "top",
-                horizontal: "center",
-              }}
-            >
-              <Box sx={{ p: 2 }}>
-                <FormControl
-                  variant="outlined"
-                  fullWidth
-                  style={{ marginBottom: "20px" }}
-                >
-                  <InputLabel>Top Priority</InputLabel>
-                  <Select
-                    value={filters.topPriority}
-                    onChange={handleFilterChange}
-                    label="Top Priority"
-                    name="topPriority"
-                  >
-                    <MenuItem value="sex">Sex</MenuItem>
-                    <MenuItem value="skillLevel">Skill Level</MenuItem>
-                    <MenuItem value="height">Height</MenuItem>
-                  </Select>
-                </FormControl>
-                <FormControl variant="outlined" fullWidth>
-                  <InputLabel>Second Priority</InputLabel>
-                  <Select
-                    value={filters.secondPriority}
-                    onChange={handleFilterChange}
-                    label="Second Priority"
-                    name="secondPriority"
-                  >
-                    <MenuItem value="sex">Sex</MenuItem>
-                    <MenuItem value="skillLevel">Skill Level</MenuItem>
-                    <MenuItem value="height">Height</MenuItem>
-                  </Select>
-                </FormControl>
-              </Box>
-            </Popover>
-          </Box>
-        </Grid>
-        <Grid item xs={12} style={{ padding: 0 }}>
-          <Button
-            fullWidth
-            variant="contained"
-            color="primary"
-            onClick={generateTeams}
-            disabled={loading}
-          >
-            {loading ? <CircularProgress size={24} /> : "Generate Teams"}
-          </Button>
-        </Grid>
-      </Grid>
+      {/* Form Widget */}
+      <GeneratorWidget
+        selectedPlayers={selectedPlayers}
+        players={players}
+        filters={filters}
+        loading={loading}
+        setLoading={setLoading}
+        setSelectedPlayers={setSelectedPlayers}
+        createSortedPlayers={createSortedPlayers}
+        distributePlayers={distributePlayers}
+        setGeneratedTeams={setGeneratedTeams}
+        setShowConfetti={setShowConfetti}
+        setShowTeams={setShowTeams}
+        numberOfTeams={numberOfTeams}
+        setNumberOfTeams={setNumberOfTeams}
+        setFilters={setFilters}
+      />
+
       {showConfetti && <Confetti />}
+      {/* Action Buttons */}
       {showTeams && (
-        <>
-          <div
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-evenly",
+            margin: "20px 0",
+            alignItems: "center",
+          }}
+        >
+          <IconButton
+            onClick={handleEditModeClick}
             style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-evenly",
-              flexWrap: "wrap",
-              margin: "20px auto",
+              border: editMode? "solid 1px #FC4445": "solid 1px black",
+              width: "30%",
+              borderRadius: "5px",
+              backgroundColor: editMode? "#FC4445" : "transparent"
             }}
           >
-            {generatedTeams.map((team, index) => (
-              <Card
-                sx={{
-                  width: 200,
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  margin: "20px",
-                }}
-                key={index}
-              >
-                <CardContent>
-                  <Typography variant="h5" component="div">
-                    Team {index + 1}
-                  </Typography>
-                  <Typography
-                    sx={{ mb: 1.5 }}
-                    color="text.secondary"
-                  ></Typography>
-                  <Typography variant="body2">
-                    {team.map((player) => (
-                      <li key={player.id}>{player.name}</li>
-                    ))}
-                  </Typography>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-          <Button
-            fullWidth
-            variant="contained"
-            color="secondary"
-            onClick={reshuffleTeams}
-            disabled={loading}
+            <EditIcon />
+          </IconButton>
+          <IconButton
+            onClick={handleShuffleClick}
+            style={{
+              border: "solid 1px black",
+              width: "30%",
+              borderRadius: "5px",
+            }}
           >
-            {loading ? <CircularProgress size={24} /> : "Reshuffle Teams"}
-          </Button>
-        </>
+            <ShuffleIcon />
+          </IconButton>
+          <IconButton
+            onClick={handlePlayerInfoClick}
+            style={{
+              border: showPlayerInfo? "solid 1px #FC4445": "solid 1px black",
+              width: "30%",
+              borderRadius: "5px",
+              backgroundColor: showPlayerInfo? "#FC4445" : "transparent"
+            }}
+          >
+            <InfoIcon />
+          </IconButton>
+        </div>
       )}
+      {/* Displayed Teams */}
+      {showTeams && (
+        <TeamDisplay
+          teams={generatedTeams}
+          editMode={editMode}
+          movePlayerToOtherTeam={movePlayerToOtherTeam}
+          setOpenDialog={setOpenDialog}
+          setPlayerToMove={setPlayerToMove}
+          showPlayerInfo={showPlayerInfo}
+        />
+      )}
+
+      <MovePlayerDialog
+        open={openDialog}
+        teams={generatedTeams}
+        player={playerToMove}
+        onMove={onMove}
+        onClose={() => setOpenDialog(false)}
+      />
     </Container>
   );
-};
-
-TeamGenerator.propTypes = {
-  numTeamsOptions: PropTypes.arrayOf(PropTypes.number).isRequired,
 };
 
 export default TeamGenerator;

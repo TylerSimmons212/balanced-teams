@@ -24,12 +24,12 @@ const NavBar = () => {
           Team Balancer
         </Typography>
         {isHomePage && (
-          <Button color="inherit" onClick={handlePlayersClick}>
+          <Button color="inherit" onClick={handlePlayersClick} sx={{backgroundColor: "#FC4445"}}>
             Players
           </Button>
         )}
         {isPlayersPage && (
-          <Button color="inherit" onClick={handleHomeClick}>
+          <Button color="inherit" onClick={handleHomeClick} sx={{backgroundColor: "#FC4445"}}>
             Home
           </Button>
         )}
