@@ -140,7 +140,7 @@ const PlayerList = ({ userId }) => {
       });
     }
     return sortableItems;
-  }, [players, sortConfig]);
+  }, [players, sortConfig, skillLevels]);
 
   const filteredPlayers = sortedPlayers.filter((player) =>
     player.name.toLowerCase().includes(searchTerm.toLowerCase())
