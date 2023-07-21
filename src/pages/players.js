@@ -13,10 +13,10 @@ const Players = () => {
   return (
     <Container style={{padding: 0}} maxWidth="md">
       <NavBar />
-      <Typography variant="h4" gutterBottom style={{textAlign: 'center', marginTop: '20px'}}>
-        Players
-      </Typography>
+      <div style={{padding: "20px"}}>
+
       <PlayerList userId={user.uid} />
+      </div>
     </Container>
   );
 };

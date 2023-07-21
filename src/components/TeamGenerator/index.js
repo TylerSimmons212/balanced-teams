@@ -33,6 +33,7 @@ const TeamGenerator = () => {
   const [filters, setFilters] = useState({
     topPriority: "skillLevel",
     secondPriority: "sex",
+    skillGrouping: "mixed"
   });
   const [showPlayerInfo, setShowPlayerInfo] = useState(false);
 
@@ -219,6 +220,7 @@ const TeamGenerator = () => {
           setOpenDialog={setOpenDialog}
           setPlayerToMove={setPlayerToMove}
           showPlayerInfo={showPlayerInfo}
+          skillGrouping={filters.skillGrouping}
         />
       )}
 

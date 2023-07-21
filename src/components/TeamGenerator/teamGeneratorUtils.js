@@ -13,31 +13,46 @@ export const createSortedPlayers = (playerIds, players) => {
   return sortedPlayers.filter((player) => player !== undefined);
 };
 
+export const skillLevels = {
+  "Beginner": 1,
+  "Intermediate": 2,
+  "Advanced": 3,
+  "Expert": 4,
+  "Professional": 5
+};
+
 export const distributePlayers = (players, numberOfTeams, filters) => {
-  const sortedPlayers = [...players].sort((a, b) => {
-    let result = 0;
-
-    if (filters.topPriority !== "none") {
-      result = comparePlayers(a, b, filters.topPriority);
-    }
-
-    if (result === 0 && filters.secondPriority !== "none") {
-      result = comparePlayers(a, b, filters.secondPriority);
-    }
-
-    return result;
-  });
+  let sortedPlayers = [...players].sort((a, b) => comparePlayers(a, b, "skillLevel"));
 
   const newTeams = Array.from({ length: numberOfTeams }, () => []);
-  sortedPlayers.forEach((player, index) => {
-    const teamIndex = index % numberOfTeams;
-    newTeams[teamIndex].push(player);
-  });
+
+  if (filters.skillGrouping === "separated" && numberOfTeams > 3) {
+    let topPlayers = sortedPlayers.filter(player => ["Professional", "Expert", "Advanced"].includes(player.skillLevel));
+    let bottomPlayers = sortedPlayers.filter(player => ["Intermediate", "Beginner"].includes(player.skillLevel));
+
+    let playersForTopTeams = topPlayers.splice(0, Math.ceil(numberOfTeams / 2) * Math.ceil(players.length / numberOfTeams));
+    let playersForBottomTeams = [...topPlayers, ...bottomPlayers];
+
+    playersForTopTeams.forEach((player, index) => {
+      newTeams[index % Math.ceil(numberOfTeams / 2)].push(player);
+    });
+
+    playersForBottomTeams.forEach((player, index) => {
+      newTeams[Math.ceil(numberOfTeams / 2) + index % Math.floor(numberOfTeams / 2)].push(player);
+    });
+  } else {
+    sortedPlayers.forEach((player, index) => {
+      const teamIndex = index % numberOfTeams;
+      newTeams[teamIndex].push(player);
+    });
+  }
 
   return newTeams;
 };
 
+
 export const comparePlayers = (a, b, priority) => {
+  console.log(a,b, priority)
   switch (priority) {
     case "sex":
       return a.sex.localeCompare(b.sex);

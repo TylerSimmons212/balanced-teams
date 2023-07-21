@@ -26,7 +26,7 @@ function Filter({ filters, onFilterChange }) {
           <MenuItem value="height">Height</MenuItem>
         </Select>
       </FormControl>
-      <FormControl variant="outlined" fullWidth>
+      <FormControl variant="outlined" fullWidth style={{ marginBottom: "20px" }}>
         <InputLabel>Second Priority</InputLabel>
         <Select
           value={filters.secondPriority}
@@ -37,6 +37,18 @@ function Filter({ filters, onFilterChange }) {
           <MenuItem value="sex">Sex</MenuItem>
           <MenuItem value="skillLevel">Skill Level</MenuItem>
           <MenuItem value="height">Height</MenuItem>
+        </Select>
+      </FormControl>
+      <FormControl variant="outlined" fullWidth>
+        <InputLabel>Skill Grouping</InputLabel>
+        <Select
+          value={filters.skillGrouping || 'mixed'}
+          onChange={handleFilterChange}
+          label="Skill Grouping"
+          name="skillGrouping"
+        >
+          <MenuItem value="mixed">Mixed</MenuItem>
+          <MenuItem value="separated">Separated</MenuItem>
         </Select>
       </FormControl>
     </Box>

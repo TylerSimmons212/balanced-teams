@@ -1,7 +1,7 @@
 // src/components/AccountIcon/index.jsx
 import React from 'react';
 import { IconButton, Menu, MenuItem } from '@mui/material';
-import { AccountCircle } from '@mui/icons-material';
+import SettingsIcon from '@mui/icons-material/Settings';
 
 const AccountIcon = ({ onLogout }) => {
   const [anchorEl, setAnchorEl] = React.useState(null);
@@ -22,7 +22,7 @@ const AccountIcon = ({ onLogout }) => {
   return (
     <div>
       <IconButton edge="end" color="inherit" onClick={handleClick}>
-        <AccountCircle />
+        <SettingsIcon />
       </IconButton>
       <Menu
         anchorEl={anchorEl}

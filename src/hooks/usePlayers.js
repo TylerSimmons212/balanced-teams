@@ -24,13 +24,13 @@ export const usePlayers = (userId) => {
 
   const addPlayer = async (player) => {
     const playerRef = collection(doc(db, "users", userId), "players");
-    await addDoc(playerRef, player);
+    await addDoc(playerRef, { ...player });
   };  
-
+  
   const updatePlayer = async (id, updatedPlayer) => {
     const playerRef = doc(db, `users/${userId}/players/${id}`);
-    await setDoc(playerRef, updatedPlayer);
-  };
+    await setDoc(playerRef, { ...updatedPlayer });
+  };  
 
   const deletePlayer = async (id) => {
     const playerRef = doc(db, `users/${userId}/players/${id}`);

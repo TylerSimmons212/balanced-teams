@@ -1,15 +1,35 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
-  Button,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
   IconButton,
   Modal,
   Box,
+  Card,
+  Button,
+  Menu,
+  MenuItem,
+  CardContent,
+  CardActions,
+  Grid,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableSortLabel,
+  TableHead,
+  Typography,
+  TableRow,
+  TableFooter,
+  useMediaQuery,
+  TextField,
 } from "@mui/material";
-import { Delete as DeleteIcon, Edit as EditIcon } from "@mui/icons-material";
+import {
+  Delete as DeleteIcon,
+  Edit as EditIcon,
+  Add as AddIcon,
+  SwapVert as SwapVertIcon
+} from "@mui/icons-material";
+import { useTheme } from "@mui/material/styles";
 import { usePlayers } from "../../hooks/usePlayers";
 import PlayerForm from "../PlayerForm";
 
@@ -27,9 +47,37 @@ const style = {
 
 const PlayerList = ({ userId }) => {
   const { players, addPlayer, updatePlayer, deletePlayer } = usePlayers(userId);
-
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const [anchorEl, setAnchorEl] = useState(null);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [openForm, setOpenForm] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortConfig, setSortConfig] = useState({
+    key: "name",
+    direction: "asc",
+  });
+
+  const skillLevels = {
+    Professional: 5,
+    Expert: 4,
+    Advanced: 3,
+    Intermediate: 2,
+    Beginner: 1,
+  };
+
+  const handleClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleMenuItemClick = (value) => {
+    handleSort(value);
+    handleClose();
+  };
 
   const handleEditClick = (player) => {
     setSelectedPlayer(player);
@@ -55,47 +103,202 @@ const PlayerList = ({ userId }) => {
     handleCloseForm();
   };
 
+  const getSexInitial = (sex) => {
+    return sex.charAt(0);
+  };
+
+  const handleSort = (columnName) => {
+    let direction = "asc";
+    if (sortConfig.key === columnName && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+    setSortConfig({ key: columnName, direction });
+  };
+
+  const sortedPlayers = React.useMemo(() => {
+    let sortableItems = [...players];
+    if (sortConfig !== null) {
+      sortableItems.sort((a, b) => {
+        if (sortConfig.key === "skillLevel") {
+          const aValue = skillLevels[a[sortConfig.key]];
+          const bValue = skillLevels[b[sortConfig.key]];
+          if (aValue < bValue) {
+            return sortConfig.direction === "asc" ? -1 : 1;
+          }
+          if (aValue > bValue) {
+            return sortConfig.direction === "asc" ? 1 : -1;
+          }
+        } else {
+          if (a[sortConfig.key] < b[sortConfig.key]) {
+            return sortConfig.direction === "asc" ? -1 : 1;
+          }
+          if (a[sortConfig.key] > b[sortConfig.key]) {
+            return sortConfig.direction === "asc" ? 1 : -1;
+          }
+        }
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [players, sortConfig]);
+
+  const filteredPlayers = sortedPlayers.filter((player) =>
+    player.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
   return (
     <div style={{ width: "100%", textAlign: "center" }}>
-      <Button
-        variant="contained"
-        color="primary"
+    <Box display="flex" justifyContent="space-between" marginBottom="20px">
+      <Typography variant="h4">Players</Typography>
+      <IconButton
+        sx={{ backgroundColor: "#000", color: "#fff" }}
         onClick={() => setOpenForm(true)}
-        style={{ margin: "0 auto", width: "300px" }}
       >
-        Add Player
+        <AddIcon />
+      </IconButton>
+    </Box>
+    <Box display="flex" justifyContent="space-between" marginBottom="20px">
+      <TextField
+        label="Search Players"
+        variant="outlined"
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
+      <Button
+        aria-controls="simple-menu"
+        aria-haspopup="true"
+        onClick={handleClick}
+      >
+        <SwapVertIcon />
       </Button>
-      <List>
-        {players.map((player) => (
-          <ListItem key={player.id}>
-            <ListItemText
-              primary={player.name}
-              secondary={`Height: ${player.height}, Skill Level: ${player.skillLevel}`}
-            />
-            <ListItemSecondaryAction>
+      <Menu
+        id="simple-menu"
+        anchorEl={anchorEl}
+        keepMounted
+        open={Boolean(anchorEl)}
+        onClose={handleClose}
+      >
+        <MenuItem onClick={() => handleMenuItemClick("skillLevel")}>
+          Skill Level
+        </MenuItem>
+        <MenuItem onClick={() => handleMenuItemClick("height")}>Height</MenuItem>
+        <MenuItem onClick={() => handleMenuItemClick("sex")}>Sex</MenuItem>
+      </Menu>
+    </Box>
+    {isMobile ? (
+      filteredPlayers.map((player) => (
+          <Card style={{ marginBottom: "15px", padding: "15px" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: "10px",
+              }}
+            >
+              <Typography variant="h6">{player.name}</Typography>
               <IconButton edge="end" onClick={() => handleEditClick(player)}>
                 <EditIcon />
               </IconButton>
-              <IconButton
-                edge="end"
-                onClick={() => handleDeleteClick(player.id)}
-              >
-                <DeleteIcon />
-              </IconButton>
-            </ListItemSecondaryAction>
-          </ListItem>
-        ))}
-      </List>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <Typography variant="body2">
+                Sex: {getSexInitial(player.sex)}
+              </Typography>
+              <Typography variant="body2">Height: {player.height}</Typography>
+              <Typography variant="body2">
+                Skill Level: {player.skillLevel}
+              </Typography>
+            </div>
+          </Card>
+        ))
+      ) : (
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>
+                    <TableSortLabel
+                      active={sortConfig.key === "name"}
+                      direction={sortConfig.direction}
+                      onClick={() => handleSort("name")}
+                    >
+                      Name
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell>
+                    <TableSortLabel
+                      active={sortConfig.key === "sex"}
+                      direction={sortConfig.direction}
+                      onClick={() => handleSort("sex")}
+                    >
+                      Sex
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell>
+                    <TableSortLabel
+                      active={sortConfig.key === "height"}
+                      direction={sortConfig.direction}
+                      onClick={() => handleSort("height")}
+                    >
+                      Height
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell>
+                    <TableSortLabel
+                      active={sortConfig.key === "skillLevel"}
+                      direction={sortConfig.direction}
+                      onClick={() => handleSort("skillLevel")}
+                    >
+                      Skill Level
+                    </TableSortLabel>
+                  </TableCell>
+                  <TableCell>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filteredPlayers.map((player) => (
+                  <TableRow key={player.id}>
+                    <TableCell>{player.name}</TableCell>
+                    <TableCell>{getSexInitial(player.sex)}</TableCell>
+                    <TableCell>{player.height}</TableCell>
+                    <TableCell>{player.skillLevel}</TableCell>
+                    <TableCell>
+                      <IconButton
+                        edge="end"
+                        onClick={() => handleEditClick(player)}
+                      >
+                        <EditIcon />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+              <TableFooter>
+                <TableRow>
+                  <TableCell colSpan={6} align="right">
+                    Total Players: {players.length}
+                  </TableCell>
+                </TableRow>
+              </TableFooter>
+            </Table>
+          </TableContainer>
+      )}
       <Modal
         open={openForm}
         onClose={handleCloseForm}
         style={{ margin: "10px" }}
       >
         <Box sx={style}>
-        <PlayerForm
+          <PlayerForm
             selectedPlayer={selectedPlayer}
             onSubmit={selectedPlayer ? handleUpdatePlayer : handleAddPlayer}
-            onCancel={handleCloseForm} // pass `handleCloseForm` as `onCancel`
+            onCancel={handleCloseForm}
             submitText={selectedPlayer ? "Update Player" : "Add Player"}
           />
         </Box>

@@ -2,6 +2,8 @@ import React, { useContext } from 'react';
 import { AppBar, Toolbar, Typography, Button } from '@mui/material';
 import { useRouter } from 'next/router';
 import AccountIcon from '../AccountIcon';
+import HomeIcon from '@mui/icons-material/Home';
+import PeopleAltIcon from '@mui/icons-material/PeopleAlt';
 import { AuthContext } from '../../contexts/AuthContext';
 
 const NavBar = () => {
@@ -25,12 +27,12 @@ const NavBar = () => {
         </Typography>
         {isHomePage && (
           <Button color="inherit" onClick={handlePlayersClick} sx={{backgroundColor: "#FC4445"}}>
-            Players
+            <PeopleAltIcon />
           </Button>
         )}
         {isPlayersPage && (
           <Button color="inherit" onClick={handleHomeClick} sx={{backgroundColor: "#FC4445"}}>
-            Home
+            <HomeIcon />
           </Button>
         )}
         {user && <AccountIcon onLogout={logout} />}

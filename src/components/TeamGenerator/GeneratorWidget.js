@@ -88,6 +88,7 @@ function GeneratorWidget({
               id="outlined-number"
               label="Number of Teams"
               type="number"
+              inputProps={{ inputMode: 'numeric' }}
               onChange={(event) => {
                 setNumberOfTeams(event.target.value);
               }}

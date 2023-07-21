@@ -7,7 +7,7 @@ import {
   Box,
   IconButton,
 } from "@mui/material";
-import { SwapVert as SwapVertIcon } from "@mui/icons-material";
+import { SwapVert as SwapVertIcon, Star as StarIcon } from "@mui/icons-material";
 
 function TeamDisplay({
   teams,
@@ -16,6 +16,7 @@ function TeamDisplay({
   setOpenDialog,
   setPlayerToMove,
   showPlayerInfo,
+  skillGrouping
 }) {
   return (
     <div>
@@ -28,6 +29,9 @@ function TeamDisplay({
               sx={{ marginBottom: "20px" }}
             >
               Team {index + 1}
+              {skillGrouping === "separated" && index < teams.length / 2 && (
+                <StarIcon color="primary" /> 
+              )}
             </Typography>
             {team.map((player) => (
               <Box
