@@ -58,8 +58,6 @@ const TeamGenerator = () => {
   };
 
   const onMove = (playerToMove, newTeamIndex) => {
-    console.log("Player to move: ", playerToMove)
-    console.log("New team index: ", newTeamIndex)
     // Check if newTeamIndex is valid
     if (newTeamIndex < 0 || newTeamIndex >= generatedTeams.length) {
       console.error(`Invalid team index: ${newTeamIndex}`);

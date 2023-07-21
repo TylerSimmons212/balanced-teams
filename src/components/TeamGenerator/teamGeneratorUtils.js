@@ -52,7 +52,6 @@ export const distributePlayers = (players, numberOfTeams, filters) => {
 
 
 export const comparePlayers = (a, b, priority) => {
-  console.log(a,b, priority)
   switch (priority) {
     case "sex":
       return a.sex.localeCompare(b.sex);

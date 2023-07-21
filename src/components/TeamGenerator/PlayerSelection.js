@@ -11,8 +11,17 @@ import {
   Checkbox,
   ListItemText,
 } from "@mui/material";
+import { styled } from "@mui/material/styles";
 
-function PlayerSelection({ selectedPlayers, players, onPlayerChange }) {
+const MAX_VISIBLE_CHIPS = 5; // Adjust this value to control how many chips are visible
+
+const OverflowChip = styled(Chip)({
+  cursor: "pointer",
+  backgroundColor: "#f50057",
+  color: "#fff",
+});
+
+const PlayerSelection = ({ selectedPlayers, players, onPlayerChange }) => {
   const ITEM_HEIGHT = 48;
   const ITEM_PADDING_TOP = 8;
   const MenuProps = {
@@ -23,6 +32,16 @@ function PlayerSelection({ selectedPlayers, players, onPlayerChange }) {
       },
     },
   };
+
+  const [areAllChipsVisible, setAreAllChipsVisible] = React.useState(false);
+
+  const handleClickShowAll = () => {
+    setAreAllChipsVisible(true);
+  };
+
+  const visiblePlayers = areAllChipsVisible
+    ? selectedPlayers
+    : selectedPlayers.slice(0, MAX_VISIBLE_CHIPS);
 
   return (
     <Grid item xs={12} style={{ padding: 0 }}>
@@ -36,12 +55,22 @@ function PlayerSelection({ selectedPlayers, players, onPlayerChange }) {
           input={<OutlinedInput label="Select Players" />}
           renderValue={(selected) => (
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-              {selected.map((value) => (
+              {visiblePlayers.map((value) => (
                 <Chip
                   key={value}
                   label={players.find((player) => player.id === value).name}
                 />
               ))}
+              {!areAllChipsVisible &&
+                selectedPlayers.length > MAX_VISIBLE_CHIPS && (
+                  <OverflowChip
+                    key="overflow-chip"
+                    label={`+${
+                      selectedPlayers.length - MAX_VISIBLE_CHIPS
+                    } more`}
+                    onClick={handleClickShowAll}
+                  />
+                )}
             </Box>
           )}
           MenuProps={MenuProps}
@@ -56,6 +85,6 @@ function PlayerSelection({ selectedPlayers, players, onPlayerChange }) {
       </FormControl>
     </Grid>
   );
-}
+};
 
 export default PlayerSelection;

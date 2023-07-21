@@ -4,7 +4,6 @@ import { Dialog, DialogTitle, DialogContent, FormControl, InputLabel, Select, Me
 function MovePlayerDialog({ open, teams, player, onMove, onClose }) {
   const [selectedTeam, setSelectedTeam] = useState('');
   const handleMove = () => {
-    console.log("Selected Team: ", selectedTeam)
     onMove(player, selectedTeam);
     onClose();
   };
