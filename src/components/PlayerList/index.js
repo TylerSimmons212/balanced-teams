@@ -114,7 +114,6 @@ const PlayerList = ({ userId }) => {
     }
     setSortConfig({ key: columnName, direction });
   };
-
   const sortedPlayers = React.useMemo(() => {
     let sortableItems = [...players];
     if (sortConfig !== null) {
@@ -141,9 +140,9 @@ const PlayerList = ({ userId }) => {
     }
     return sortableItems;
   }, [players, sortConfig]);
-
+  
   const filteredPlayers = sortedPlayers.filter((player) =>
-    player.name.toLowerCase().includes(searchTerm.toLowerCase())
+  player.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
   return (
     <div style={{ width: "100%", textAlign: "center" }}>
@@ -186,7 +185,7 @@ const PlayerList = ({ userId }) => {
     </Box>
     {isMobile ? (
       filteredPlayers.map((player) => (
-          <Card style={{ marginBottom: "15px", padding: "15px" }}>
+          <Card key={player.id} style={{ marginBottom: "15px", padding: "15px" }}>
             <div
               style={{
                 display: "flex",
