@@ -44,6 +44,13 @@ const style = {
   boxShadow: 24,
   borderRadius: "5px",
 };
+const skillLevels = {
+  Professional: 5,
+  Expert: 4,
+  Advanced: 3,
+  Intermediate: 2,
+  Beginner: 1,
+};
 
 const PlayerList = ({ userId }) => {
   const { players, addPlayer, updatePlayer, deletePlayer } = usePlayers(userId);
@@ -58,13 +65,6 @@ const PlayerList = ({ userId }) => {
     direction: "asc",
   });
 
-  const skillLevels = {
-    Professional: 5,
-    Expert: 4,
-    Advanced: 3,
-    Intermediate: 2,
-    Beginner: 1,
-  };
 
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -140,7 +140,7 @@ const PlayerList = ({ userId }) => {
       });
     }
     return sortableItems;
-  }, [players, sortConfig, skillLevels]);
+  }, [players, sortConfig]);
 
   const filteredPlayers = sortedPlayers.filter((player) =>
     player.name.toLowerCase().includes(searchTerm.toLowerCase())
