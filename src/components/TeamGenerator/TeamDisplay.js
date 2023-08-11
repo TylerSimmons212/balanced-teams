@@ -1,98 +1,140 @@
-import React from "react";
+import React, { useState } from "react";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
   Card,
   CardContent,
+  Button,
+  TableSortLabel,
   Typography,
-  Paper,
-  Box,
-  IconButton,
 } from "@mui/material";
-import { SwapVert as SwapVertIcon, Star as StarIcon } from "@mui/icons-material";
 
-function TeamDisplay({
-  teams,
-  editMode,
-  movePlayerToOtherTeam,
-  setOpenDialog,
-  setPlayerToMove,
-  showPlayerInfo,
-  skillGrouping
-}) {
+const skillLevelOrder = ['Professional', 'Expert', 'Advanced', 'Intermediate', 'Beginner'];
+
+function skillLevelComparator(a, b) {
+  return skillLevelOrder.indexOf(a) - skillLevelOrder.indexOf(b);
+}
+
+function descendingComparator(a, b, orderBy) {
+  if (orderBy === 'skillLevel') {
+    return skillLevelComparator(b[orderBy], a[orderBy]);
+  }
+  if (b[orderBy] < a[orderBy]) {
+    return -1;
+  }
+  if (b[orderBy] > a[orderBy]) {
+    return 1;
+  }
+  return 0;
+}
+
+function getComparator(order, orderBy) {
+  return order === 'desc'
+    ? (a, b) => descendingComparator(a, b, orderBy)
+    : (a, b) => -descendingComparator(a, b, orderBy);
+}
+
+function stableSort(array, comparator) {
+  const stabilizedThis = array.map((el, index) => [el, index]);
+  stabilizedThis.sort((a, b) => {
+    const order = comparator(a[0], b[0]);
+    if (order !== 0) {
+      return order;
+    }
+    return a[1] - b[1];
+  });
+  return stabilizedThis.map((el) => el[0]);
+}
+
+const TeamDisplay = ({ teams, editMode, handleMoveClick, showPlayerInfo }) => {
+  const [order, setOrder] = useState("asc");
+  const [orderBy, setOrderBy] = useState("name");
+
+  const handleRequestSort = (property) => {
+    const isAsc = orderBy === property && order === 'asc';
+    setOrder(isAsc ? 'desc' : 'asc');
+    setOrderBy(property);
+  };
+
+  const createSortHandler = (property) => () => {
+    handleRequestSort(property);
+  };
+
   return (
     <div>
-      {teams.map((team, index) => (
-        <Card key={index} sx={{ margin: "15px auto" }}>
-          <CardContent sx={{ textAlign: "center" }}>
-            <Typography
-              variant="h5"
-              component="div"
-              sx={{ marginBottom: "20px" }}
-            >
-              Team {index + 1}
-              {skillGrouping === "separated" && index < teams.length / 2 && (
-                <StarIcon color="primary" /> 
-              )}
-            </Typography>
-            {team.map((player) => (
-              <Box
-                key={player.id}
-                sx={{
-                  display: "flex",
-                  justifyContent: "center",
-                  marginBottom: "15px",
-                }}
-              >
-                <Paper
-                  sx={{
-                    padding: "10px",
-                    display: "flex",
-                    alignItems: "center",
-                    backgroundColor: "rgba(0, 0, 0, 0.08)",
-                    justifyContent: editMode ? "space-between" : "center",
-                    minWidth: "200px",
-                    animation: editMode ? `jiggle 0.3s infinite` : "none",
-                  }}
-                  elevation={3}
-                >
-                  <div style={{width: "100%"}}>
-                    <Typography variant="body1"  sx={{fontWeight: "bold"}}>
-                      {player.name}
-                    </Typography>
+      {teams.map((teamObj, index) => {
+        const teamName = Object.keys(teamObj)[0];
+        const players = teamObj[teamName];
+
+        return (
+          <Card key={index} style={{ marginBottom: "20px", textAlign: 'center' }}>
+            <CardContent>
+              <Typography variant="h5">{teamName}</Typography>
+              <Table>
+              <TableHead>
+                  <TableRow>
                     {showPlayerInfo && (
-                      <div style={{display: "flex", alignItems:"center", justifyContent: "space-evenly", width: "100%", marginTop: "8px"}}>
-                      <Typography variant="body2" color="rgba(0,0,0,0.6)">
-                        {player.sex}
-                      </Typography>
-                      <Typography variant="body2" color="rgba(0,0,0,0.6)">
-                        {player.skillLevel}
-                      </Typography>
-                      </div>
+                      <>
+                    <TableCell style={{ textAlign: 'center', fontWeight: 'bold' }}>
+                      <TableSortLabel active={orderBy === 'name'} direction={order} onClick={createSortHandler('name')}>
+                        Name
+                      </TableSortLabel>
+                    </TableCell>
+                        <TableCell style={{ textAlign: 'center', fontWeight: 'bold' }}>
+                          <TableSortLabel active={orderBy === 'sex'} direction={order} onClick={createSortHandler('sex')}>
+                            Sex
+                          </TableSortLabel>
+                        </TableCell>
+                        <TableCell style={{ textAlign: 'center', fontWeight: 'bold' }}>
+                          <TableSortLabel
+                            active={orderBy === 'skillLevel'}
+                            direction={order}
+                            onClick={createSortHandler('skillLevel')}
+                          >
+                            Skill Level
+                          </TableSortLabel>
+                        </TableCell>
+                        {editMode && <TableCell style={{ textAlign: 'center' }}>Action</TableCell>}
+                      </>
                     )}
-                  </div>
-                  {editMode && (
-                    <IconButton
-                      size="small"
-                      color="primary"
-                      onClick={() => {
-                        if (teams.length === 2) {
-                          movePlayerToOtherTeam(player);
-                        } else {
-                          setOpenDialog(true);
-                          setPlayerToMove(player);
-                        }
-                      }}
-                    >
-                      <SwapVertIcon />
-                    </IconButton>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {stableSort(players, getComparator(order, orderBy)).map(
+                    (player, playerIndex) => (
+                      <TableRow key={playerIndex}>
+                        <TableCell style={{ textAlign: 'center' }}>{player.name}</TableCell>
+                        {showPlayerInfo && (
+                          <>
+                            <TableCell style={{ textAlign: 'center' }}>{player.sex}</TableCell>
+                            <TableCell style={{ textAlign: 'center' }}>{player.skillLevel}</TableCell>
+                          </>
+                        )}
+                        {editMode && (
+                          <TableCell style={{ textAlign: 'center' }}>
+                            <Button
+                              variant="contained"
+                              color="primary"
+                              onClick={() => handleMoveClick(player)}
+                            >
+                              Move
+                            </Button>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    )
                   )}
-                </Paper>
-              </Box>
-            ))}
-          </CardContent>
-        </Card>
-      ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
-}
+};
 
 export default TeamDisplay;

@@ -1,61 +1,69 @@
 import React, { useState, useContext, useEffect } from "react";
 import Confetti from "react-confetti";
-import { Container, Typography, IconButton } from "@mui/material";
+import { Container, Typography } from "@mui/material";
 import { usePlayers } from "../../hooks/usePlayers";
 import { AuthContext } from "../../contexts/AuthContext";
 import TeamDisplay from "./TeamDisplay";
-import GeneratorWidget from "./GeneratorWidget";
 import MovePlayerDialog from "./MovePlayerDialog";
 import {
-  Shuffle as ShuffleIcon,
-  Info as InfoIcon,
-  Edit as EditIcon,
-} from "@mui/icons-material";
-import {
-  shuffle,
-  createSortedPlayers,
-  distributePlayers,
+  getPlayersInfo,
+  createGeneratedTeams,
+  createTeams,
 } from "./teamGeneratorUtils";
+import Widget from "./Widget/Widget";
+import ActionButtons from "./ActionButtons/ActionButtons";
 
 const TeamGenerator = () => {
-  const [selectedPlayers, setSelectedPlayers] = useState([]);
   const { user } = useContext(AuthContext);
   const userId = user?.uid;
   const { players } = usePlayers(userId);
   const [loading, setLoading] = useState(false);
-  const [showTeams, setShowTeams] = useState(false);
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [numberOfTeams, setNumberOfTeams] = useState(2);
   const [editMode, setEditMode] = useState(false);
+  const [showTeams, setShowTeams] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
-  const [generatedTeams, setGeneratedTeams] = useState([]);
   const [playerToMove, setPlayerToMove] = useState({});
-  const [filters, setFilters] = useState({
-    topPriority: "skillLevel",
-    secondPriority: "sex",
-    skillGrouping: "mixed"
-  });
+  const [numberOfTeams, setNumberOfTeams] = useState(2);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [generatedTeams, setGeneratedTeams] = useState([]);
+  const [selectedPlayers, setSelectedPlayers] = useState([]);
   const [showPlayerInfo, setShowPlayerInfo] = useState(false);
+  const [skillGrouping, setSkillGrouping] = useState("mixed");
+  const [secondPriority, setSecondPriority] = useState("sex");
+  const [topPriority, setTopPriority] = useState("skillLevel");
 
-  const handleShuffleClick = () => {
-    setShowConfetti(true);
-    setLoading(true);
-    setTimeout(() => {
-      const shuffledPlayerIds = shuffle(selectedPlayers.slice());
-      const sortedPlayers = createSortedPlayers(shuffledPlayerIds, players);
-      const newTeams = distributePlayers(sortedPlayers, numberOfTeams, filters);
-      setGeneratedTeams(newTeams);
+  const generateTeams = (shouldShuffle = false) => {
+    let playersInfo = getPlayersInfo(selectedPlayers, players);
+    if (shouldShuffle) {
+      playersInfo = shuffleArray(playersInfo); // Shuffle the players using the shuffle function
+    }
+    if (playersInfo.length < numberOfTeams) {
+      alert(
+        `Please select at least ${numberOfTeams} players to generate ${numberOfTeams} teams`
+      );
       setLoading(false);
-    }, 1000);
+      return;
+    }
+    const myTeams = createTeams(
+      playersInfo,
+      numberOfTeams,
+      topPriority,
+      secondPriority,
+      generatedTeams,
+      skillGrouping
+    );
+    setGeneratedTeams(myTeams);
+    setShowTeams(true);
+    setShowConfetti(true);
+    setLoading(false);
   };
 
-  const handleEditModeClick = () => {
-    setEditMode(!editMode);
-  };
-
-  const handlePlayerInfoClick = () => {
-    setShowPlayerInfo(!showPlayerInfo);
-  };
+  function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]]; // Swap elements
+    }
+    return array;
+  }
 
   const onMove = (playerToMove, newTeamIndex) => {
     // Check if newTeamIndex is valid
@@ -63,65 +71,75 @@ const TeamGenerator = () => {
       console.error(`Invalid team index: ${newTeamIndex}`);
       return;
     }
-
+  
     // Find the current team of the player
-    const currentTeamIndex = generatedTeams.findIndex((team) =>
-      team.some((p) => p.id === playerToMove.id)
-    );
-
+    const currentTeamIndex = generatedTeams.findIndex((teamObj) => {
+      const playersArray = Object.values(teamObj)[0];
+      return playersArray.some((p) => p.id === playerToMove.id);
+    });
+  
     // Check if player was found in a team
     if (currentTeamIndex === -1) {
       console.error(`Player not found in any team: ${playerToMove.id}`);
       return;
     }
-
-    // Get the current team
-    const currentTeam = generatedTeams[currentTeamIndex];
-
+  
+    // Get the current team's players array
+    const currentTeamPlayers = Object.values(generatedTeams[currentTeamIndex])[0];
+  
     // Remove the player from the current team
-    const updatedCurrentTeam = currentTeam.filter(
+    const updatedCurrentTeamPlayers = currentTeamPlayers.filter(
       (p) => p.id !== playerToMove.id
     );
-
-    // Add the player to the new team
-    const updatedNewTeam = [...generatedTeams[newTeamIndex], playerToMove];
-
+  
+    // Get the new team's players array and add the player
+    const newTeamPlayers = Object.values(generatedTeams[newTeamIndex])[0];
+    const updatedNewTeamPlayers = [...newTeamPlayers, playerToMove];
+  
     // Update the teams state
     const updatedTeams = generatedTeams.map((team, index) => {
-      if (index === currentTeamIndex) return updatedCurrentTeam;
-      if (index === newTeamIndex) return updatedNewTeam;
+      if (index === currentTeamIndex) {
+        const teamName = Object.keys(team)[0];
+        return { [teamName]: updatedCurrentTeamPlayers };
+      }
+      if (index === newTeamIndex) {
+        const teamName = Object.keys(team)[0];
+        return { [teamName]: updatedNewTeamPlayers };
+      }
       return team;
     });
-
-    setGeneratedTeams(updatedTeams, () => {
-      // Check if player was found in a team after state update
-      const updatedCurrentTeamIndex = generatedTeams.findIndex((team) =>
-        team.some((p) => p.id === playerToMove.id)
-      );
-      if (updatedCurrentTeamIndex === -1) {
-        console.error(`Player not found in any team: ${playerToMove.id}`);
-        return;
-      }
-    });
+  
+    // Set the updated teams
+    setGeneratedTeams(updatedTeams);
   };
+  
 
   const movePlayerToOtherTeam = (playerToMove) => {
-    // Find the other team
-    const currentTeamIndex = generatedTeams.findIndex((team) =>
-      team.some((p) => p.id === playerToMove.id)
-    );
-
+  
+    // Find the current team of the player
+    const currentTeamIndex = generatedTeams.findIndex((teamObj) => {
+      const playersArray = Object.values(teamObj)[0];
+      return playersArray.some((p) => p.id === playerToMove.id);
+    });
+    
+  
     // Check if player was found in a team
     if (currentTeamIndex === -1) {
       console.error(`Player not found in any team: ${playerToMove.id}`);
       return;
     }
-
-    const otherTeamIndex = currentTeamIndex === 0 ? 1 : 0;
-
-    // Use the onMove function to move the player to the other team
-    onMove(playerToMove, otherTeamIndex);
+  
+    // If there are only two teams, automatically switch the player to the other team
+    if (generatedTeams.length === 2) {
+      const otherTeamIndex = currentTeamIndex === 0 ? 1 : 0;
+      onMove(playerToMove, otherTeamIndex);
+    } else {
+      // If more than two teams, set the player to move and open the dialog
+      setPlayerToMove(playerToMove);
+      setOpenDialog(true);
+    }
   };
+  
 
   useEffect(() => {
     let confettiTimeout;
@@ -147,80 +165,45 @@ const TeamGenerator = () => {
         Team Generator
       </Typography>
       {/* Form Widget */}
-      <GeneratorWidget
+      <Widget
         selectedPlayers={selectedPlayers}
         players={players}
-        filters={filters}
         loading={loading}
-        setLoading={setLoading}
         setSelectedPlayers={setSelectedPlayers}
-        createSortedPlayers={createSortedPlayers}
-        distributePlayers={distributePlayers}
-        setGeneratedTeams={setGeneratedTeams}
-        setShowConfetti={setShowConfetti}
-        setShowTeams={setShowTeams}
-        numberOfTeams={numberOfTeams}
         setNumberOfTeams={setNumberOfTeams}
-        setFilters={setFilters}
+        generateTeams={generateTeams}
+        topPriority={topPriority}
+        secondPriority={secondPriority}
+        skillGrouping={skillGrouping}
+        setTopPriority={setTopPriority}
+        setSecondPriority={setSecondPriority}
+        setSkillGrouping={setSkillGrouping}
       />
 
-      {showConfetti && <Confetti />}
+      {/* {showConfetti && <Confetti />} */}
       {/* Action Buttons */}
-      {showTeams && (
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-evenly",
-            margin: "20px 0",
-            alignItems: "center",
-          }}
-        >
-          <IconButton
-            onClick={handleEditModeClick}
-            style={{
-              border: editMode? "solid 1px #FC4445": "solid 1px black",
-              width: "30%",
-              borderRadius: "5px",
-              backgroundColor: editMode? "#FC4445" : "transparent"
-            }}
-          >
-            <EditIcon />
-          </IconButton>
-          <IconButton
-            onClick={handleShuffleClick}
-            style={{
-              border: "solid 1px black",
-              width: "30%",
-              borderRadius: "5px",
-            }}
-          >
-            <ShuffleIcon />
-          </IconButton>
-          <IconButton
-            onClick={handlePlayerInfoClick}
-            style={{
-              border: showPlayerInfo? "solid 1px #FC4445": "solid 1px black",
-              width: "30%",
-              borderRadius: "5px",
-              backgroundColor: showPlayerInfo? "#FC4445" : "transparent"
-            }}
-          >
-            <InfoIcon />
-          </IconButton>
-        </div>
-      )}
-      {/* Displayed Teams */}
-      {showTeams && (
-        <TeamDisplay
-          teams={generatedTeams}
-          editMode={editMode}
-          movePlayerToOtherTeam={movePlayerToOtherTeam}
-          setOpenDialog={setOpenDialog}
-          setPlayerToMove={setPlayerToMove}
-          showPlayerInfo={showPlayerInfo}
-          skillGrouping={filters.skillGrouping}
-        />
-      )}
+      {showTeams ? (
+        <>
+          <ActionButtons
+            setEditMode={setEditMode}
+            editMode={editMode}
+            setShowConfetti={setShowConfetti}
+            setLoading={setLoading}
+            generateTeams={generateTeams}
+            setShowPlayerInfo={setShowPlayerInfo}
+            showPlayerInfo={showPlayerInfo}
+          />
+          <TeamDisplay
+            teams={generatedTeams}
+            editMode={editMode}
+            handleMoveClick={movePlayerToOtherTeam}
+            setOpenDialog={setOpenDialog}
+            setPlayerToMove={setPlayerToMove}
+            showPlayerInfo={showPlayerInfo}
+            skillGrouping={skillGrouping}
+          />
+        </>
+      ) : null}
 
       <MovePlayerDialog
         open={openDialog}

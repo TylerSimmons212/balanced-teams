@@ -1,65 +1,148 @@
-export const shuffle = (array) => {
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [array[i], array[j]] = [array[j], array[i]];
-  }
-  return array;
-};
-
-export const createSortedPlayers = (playerIds, players) => {
-  const sortedPlayers = playerIds.map((playerId) =>
+export const getPlayersInfo = (playerIds, players) => {
+  const foundPlayers = playerIds.map((playerId) =>
     players.find((player) => player.id === playerId)
   );
-  return sortedPlayers.filter((player) => player !== undefined);
+  return foundPlayers.filter((player) => player !== undefined);
 };
 
-export const skillLevels = {
-  "Beginner": 1,
-  "Intermediate": 2,
-  "Advanced": 3,
-  "Expert": 4,
-  "Professional": 5
+const convertHeightToInches = (heightString) => {
+  const heightWithoutQuote = heightString.replace('"', ""); // Remove the trailing "
+  const [feet, inches] = heightWithoutQuote.split("'").map(Number);
+  return feet * 12 + inches;
 };
 
-export const distributePlayers = (players, numberOfTeams, filters) => {
-  let sortedPlayers = [...players].sort((a, b) => comparePlayers(a, b, "skillLevel"));
 
-  const newTeams = Array.from({ length: numberOfTeams }, () => []);
+// Helper function to distribute players
+const distributePlayers = (
+  sortedPlayers,
+  teams,
+  numberOfTeams,
+  topPriority
+) => {
+  let currentTeam = 0;
 
-  if (filters.skillGrouping === "separated" && numberOfTeams > 3) {
-    let topPlayers = sortedPlayers.filter(player => ["Professional", "Expert", "Advanced"].includes(player.skillLevel));
-    let bottomPlayers = sortedPlayers.filter(player => ["Intermediate", "Beginner"].includes(player.skillLevel));
+  // Distribute players by pairing from the front and end of the sorted players list
+  while (sortedPlayers.length > 0) {
+    if (topPriority === "skilLevel") {
+      // Take a player from the front of the sorted list
+      const frontPlayer = sortedPlayers.shift();
+      if (frontPlayer) {
+        teams[currentTeam][`Team ${currentTeam + 1}`].push(frontPlayer);
+      }
+      // Take a player from the end of the sorted list
+      const endPlayer = sortedPlayers.pop();
+      if (endPlayer) {
+        teams[currentTeam][`Team ${currentTeam + 1}`].push(endPlayer);
+      }
+    } else {
+      // Add a player to the current team
+      teams[currentTeam][`Team ${currentTeam + 1}`].push(sortedPlayers.shift());
+    }
 
-    let playersForTopTeams = topPlayers.splice(0, Math.ceil(numberOfTeams / 2) * Math.ceil(players.length / numberOfTeams));
-    let playersForBottomTeams = [...topPlayers, ...bottomPlayers];
+    // Move to the next team, and wrap around if necessary
+    currentTeam = (currentTeam + 1) % numberOfTeams;
+  }
+};
 
-    playersForTopTeams.forEach((player, index) => {
-      newTeams[index % Math.ceil(numberOfTeams / 2)].push(player);
-    });
+// Main function to create teams
+export const createTeams = (
+  playersInfo,
+  numberOfTeams,
+  topPriority,
+  secondPriority,
+  generatedTeams,
+  skillGrouping
+) => {
+  // Organizing the players by category
+  console.log("Previous Teams?", generatedTeams);
+  const skillLevels = {
+    Professional: [],
+    Expert: [],
+    Advanced: [],
+    Intermediate: [],
+    Beginner: [],
+  };
+  const sexes = {
+    Male: [],
+    Female: [],
+  };
+  playersInfo.forEach((player) => {
+    player.heightInInches = convertHeightToInches(player.height);
+    skillLevels[player.skillLevel].push(player);
+    sexes[player.sex].push(player);
+  });
 
-    playersForBottomTeams.forEach((player, index) => {
-      newTeams[Math.ceil(numberOfTeams / 2) + index % Math.floor(numberOfTeams / 2)].push(player);
-    });
-  } else {
-    sortedPlayers.forEach((player, index) => {
-      const teamIndex = index % numberOfTeams;
-      newTeams[teamIndex].push(player);
-    });
+  // Setup empty team arrays
+  let teams = Array.from({ length: numberOfTeams }, (_, i) => ({
+    [`Team ${i + 1}`]: [],
+  }));
+  console.log(teams);
+
+  // Define the skill levels in descending order
+  const skillOrder = [
+    "Professional",
+    "Expert",
+    "Advanced",
+    "Intermediate",
+    "Beginner",
+  ];
+
+  // Distribution logic based on priorities
+  let sortedPlayers = [];
+  if (topPriority === "skillLevel") {
+    if (secondPriority === "sex") {
+      skillOrder.forEach((skillLevel) => {
+        ["Male", "Female"].forEach((sex) => {
+          sortedPlayers = sortedPlayers.concat(
+            skillLevels[skillLevel].filter((player) => player.sex === sex)
+          );
+        });
+      });
+    } else if (secondPriority === "height") {
+      skillOrder.forEach((skillLevel) => {
+        const group = skillLevels[skillLevel].slice();
+        group.sort((a, b) => b.heightInInches - a.heightInInches);
+        sortedPlayers = sortedPlayers.concat(group);
+      });
+    }
+  } else if (topPriority === "sex") {
+    if (secondPriority === "skillLevel") {
+      ["Male", "Female"].forEach((sex) => {
+        skillOrder.forEach((skillLevel) => {
+          sortedPlayers = sortedPlayers.concat(
+            skillLevels[skillLevel].filter((player) => player.sex === sex)
+          );
+        });
+      });
+    } else if (secondPriority === "height") {
+      ["Male", "Female"].forEach((sex) => {
+        const group = sexes[sex].slice();
+        group.sort((a, b) => b.heightInInches - a.heightInInches);
+        sortedPlayers = sortedPlayers.concat(group);
+      });
+    }
+  } else if (topPriority === "height") {
+    if (secondPriority === "skillLevel") {
+      const allPlayers = playersInfo.slice();
+      allPlayers.sort((a, b) => b.heightInInches - a.heightInInches);
+      skillOrder.forEach((skillLevel) => {
+        sortedPlayers = sortedPlayers.concat(
+          allPlayers.filter((player) => player.skillLevel === skillLevel)
+        );
+      });
+    } else if (secondPriority === "sex") {
+      const allPlayers = playersInfo.slice();
+      allPlayers.sort((a, b) => b.heightInInches - a.heightInInches);
+      ["Male", "Female"].forEach((sex) => {
+        sortedPlayers = sortedPlayers.concat(
+          allPlayers.filter((player) => player.sex === sex)
+        );
+      });
+    }
   }
 
-  return newTeams;
-};
+  // Call the distribution helper function
+  distributePlayers(sortedPlayers, teams, numberOfTeams, topPriority);
 
-
-export const comparePlayers = (a, b, priority) => {
-  switch (priority) {
-    case "sex":
-      return a.sex.localeCompare(b.sex);
-    case "skillLevel":
-      return b.skillLevel.localeCompare(a.skillLevel);
-    case "height":
-      return b.height - a.height;
-    default:
-      return 0;
-  }
+  return teams;
 };

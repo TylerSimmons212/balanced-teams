@@ -1,10 +1,10 @@
 import { Box, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
 
-function Filter({ filters, onFilterChange }) {
+function Filter({ topPriority, secondPriority, skillGrouping, onFilterChange }) {
 
   const handleFilterChange = (event) => {
     const { name, value } = event.target;
-    onFilterChange({ ...filters, [name]: value });
+    onFilterChange({ [name]: value });
   };
 
   return (
@@ -16,7 +16,7 @@ function Filter({ filters, onFilterChange }) {
       >
         <InputLabel>Top Priority</InputLabel>
         <Select
-          value={filters.topPriority}
+          value={topPriority}
           onChange={handleFilterChange}
           label="Top Priority"
           name="topPriority"
@@ -29,7 +29,7 @@ function Filter({ filters, onFilterChange }) {
       <FormControl variant="outlined" fullWidth style={{ marginBottom: "20px" }}>
         <InputLabel>Second Priority</InputLabel>
         <Select
-          value={filters.secondPriority}
+          value={secondPriority}
           onChange={handleFilterChange}
           label="Second Priority"
           name="secondPriority"
@@ -42,7 +42,7 @@ function Filter({ filters, onFilterChange }) {
       <FormControl variant="outlined" fullWidth>
         <InputLabel>Skill Grouping</InputLabel>
         <Select
-          value={filters.skillGrouping || 'mixed'}
+          value={skillGrouping || 'mixed'}
           onChange={handleFilterChange}
           label="Skill Grouping"
           name="skillGrouping"
